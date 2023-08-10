@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "ledboxsoftware"
+version = "0.1.0"
+description = ""
+authors = ["IndexOfNull <21084775+IndexOfNull@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+Pillow = "^10.0.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
