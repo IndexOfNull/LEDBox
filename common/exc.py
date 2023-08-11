@@ -1,0 +1,2 @@
+
+class PluginAlreadyRegistered(Exception): pass
