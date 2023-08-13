@@ -1,14 +1,38 @@
 import common.display_manager as dm
 from time import sleep
+import asyncio
+from random import randint
+import time
 
 display_manager = dm.DisplayManager(width=64, height=64)
 
-l = display_manager.new_layout()
-p = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
-l.change_plugin_coords(p, x = 0, width = 48, height = 16, y = 32)
+async def main():
+    l = display_manager.new_layout()
+    p = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
+    p = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
+    p = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
+    p = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
+    p = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
+    p = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
+    p = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
+    p = l.add_plugin("modules.httptest", width = 30, height = 38, x = 64-30, y = 64-38)
 
-l2 = display_manager.new_layout()
-l2.add_plugin(p, width = 16, height = 16, x = 32, y = 32)
+    l2 = display_manager.new_layout()
+    l2.add_plugin(p, width = 16, height = 16, x = 32, y = 32)
 
-display_manager.switch_layout(l)
-display_manager.switch_layout(l2)
+    await display_manager.switch_layout(l)
+
+    end_time = 0
+    while True:
+        start_time = time.perf_counter()
+        await display_manager.update_display()
+        interframe_time = time.perf_counter() - end_time
+        end_time = time.perf_counter()
+        total_time = end_time - start_time
+        print(f"Frame time: {total_time*1000} ms, {1/total_time} fps, {interframe_time} dT")
+        await asyncio.sleep(1)
+        # print("Changing plugin coords")
+        # await l.change_plugin_coords(p, x = randint(0, 32), y = randint(0, 32))
+
+if __name__ == "__main__":
+    asyncio.run(main())

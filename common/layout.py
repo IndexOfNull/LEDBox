@@ -3,22 +3,16 @@ from common.exc import PluginAlreadyRegistered, PluginNotRegistered
 from PIL import Image
 
 from importlib import import_module
+import asyncio
 
 class Layout():
 
     def __init__(self, display_manager, *, screen_width = 64, screen_height = 64):
-        self._plugins: list[PluginBase] = [] # Map plugin-ids -> plugin
+        self._plugins: list[PluginBase] = []
         self._plugin_coordinates: dict[PluginBase, tuple(int, int, int, int)] = {}
         self._canvas = Image.new("RGB", (screen_width, screen_height))
-        self.visible = False
+        self._visible = False
         self._display_manager = display_manager
-
-    @property
-    def canvas(cls) -> Image:
-        '''
-        Called when the parent display manager asks for a frame. Should return a frame the display manager can render
-        '''
-        return cls._canvas
 
     def frame_requested(self) -> Image:
         '''
@@ -65,7 +59,15 @@ class Layout():
         if redraw:
             self.draw()
 
-    def draw(self, *, redraw = False) -> Image:
+    def get_plugin(self, plugin: PluginBase):
+        '''
+        Returns a plugin instance if it exists within the layout
+        '''
+        if plugin not in self._plugins:
+            return None
+        return plugin
+
+    async def draw(self) -> Image:
         '''
         Draws a frame using all of the plugin canvases.
         
@@ -75,20 +77,24 @@ class Layout():
         '''
         self._canvas.paste( (0, 0, 0), (0, 0, self._canvas.width, self._canvas.height)) # Fill entire screen with black
 
+        tasks = {} # Make a copy dict in case plugins gets mutated asyncronously, i guess
         for plugin in self._plugins:
-            if redraw:
-                plugin_canvas = plugin.draw()
-            else:
-                plugin_canvas = plugin.canvas
+            tasks[plugin] = asyncio.wait_for(plugin.draw(), timeout=0.1) # 100 ms to draw
+
+        canvases = await asyncio.gather(*tasks.values(), return_exceptions = True)
+        for canvas, plugin in zip(canvases, tasks.keys()):
+            if isinstance(canvas, Exception):
+                print(f"Warning: {plugin} draw() call returned an exception and could not be composited:", canvas)
+                continue # Skip compositiing a plugin if it's draw function has errored
 
             try:
-                self._canvas.paste(plugin_canvas, self._plugin_coordinates[plugin])
+                self._canvas.paste(canvas, self._plugin_coordinates[plugin])
             except:
                 print(f"{plugin} failed to paste onto layout. This is probably because the plugin illegally changed the size of its frame.")
 
         return self._canvas
 
-    def screen_updated(self):
+    async def screen_updated(self):
         '''
         Called right after the screen updates.
         Only called if the current layout is active.
@@ -97,14 +103,10 @@ class Layout():
 
         Subclasses should also take care to not trigger another screen update with this function (infinite loop).
         '''
-        print("Layout: screen updated")
         for plugin in self._plugins:
-            plugin.screen_updated()
+            await plugin.screen_updated()
 
-    def refresh_plugin_frame(self, plugin):
-        self._canvas.paste(plugin.canvas, self._plugin_coordinates[plugin])
-
-    def change_plugin_coords(self, plugin: PluginBase, *, x:int = None, y:int = None, width:int = None, height:int = None):
+    async def change_plugin_coords(self, plugin: PluginBase, *, x:int = None, y:int = None, width:int = None, height:int = None):
         old_coords = self._plugin_coordinates[plugin]
         old_width = abs(old_coords[2] - old_coords[0])
         old_height = abs(old_coords[3] - old_coords[1])
@@ -126,9 +128,10 @@ class Layout():
         new_height = (height if height is not None else old_height)
 
         self._plugin_coordinates[plugin] = tuple(new_coords)
-        plugin.resize_requested(new_width, new_height)
+        await plugin.resize_requested(new_width, new_height)
+        await self.draw()
 
-    def handle_plugin_changeover(self):
+    async def handle_plugin_changeover(self):
         '''
         Called when this layout becomes active (before activated is called)
         Notifies plugins that this layout is visible and asks them to resize accordingly.
@@ -136,19 +139,34 @@ class Layout():
         This function is separated for the convenience of subclasses.
         '''
         for plugin, dimensions in self._plugin_coordinates.items():
-            plugin.layout_switched(self)
+            await plugin.layout_switched(self)
 
             width = abs(dimensions[2] - dimensions[0])
             height = abs(dimensions[3] - dimensions[1])
-            plugin.resize_requested(width, height)
+            await plugin.resize_requested(width, height)
 
-    def activated(self):
+    # This is kind of janky and arguably it would be better to 
+    async def plugin_draw_requested(self, plugin: PluginBase) -> Image:
+        '''
+        Called by the display manager when a plugin requests a screen draw
+        '''
+        plugin = self.get_plugin(plugin)
+        if not plugin:
+            return
+        
+        canvas = await plugin.draw()
+        self._canvas.paste( (0, 0, 0), self._plugin_coordinates[plugin])
+        self._canvas.paste(canvas, self._plugin_coordinates[plugin])
+        return self._canvas
+
+
+    async def activated(self):
         '''
         Called when the layout is being unhidden. This is called before a fresh draw when switching layouts.
         '''
-        pass
+        self._visible = True
 
-    def deactivated(self):
+    async def deactivated(self):
         '''
         Called when the layout is being hidden, usually when switching to a different layout
         '''

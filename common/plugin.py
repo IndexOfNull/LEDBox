@@ -18,7 +18,7 @@ class PluginBase():
         self._current_height = dimensions[1]
         self.display_manager = display_manager # Reference to the parent window manager
 
-    def draw(self) -> Image:
+    async def draw(self) -> Image:
         '''
         Draws the canvas of this plugin.
         This size of the returned canvas must match what the calling layout is expecting
@@ -32,7 +32,7 @@ class PluginBase():
         '''
         pass
 
-    def screen_updated(self):
+    async def screen_updated(self):
         '''
         Called right after the screen updates.
 
@@ -40,13 +40,13 @@ class PluginBase():
         '''
         return None
 
-    def teardown(self):
+    async def teardown(self):
         '''
         Called when this plugin is unloaded
         '''
         pass
 
-    def resize_requested(self, width, height):
+    async def resize_requested(self, width, height):
         '''
         Called when the parent layout requests a resize
         or when switching to a layout containing this plugin in a different size.
@@ -58,5 +58,11 @@ class PluginBase():
         self._current_width = width
         self._current_height = height
 
-    def layout_switched(self, current_layout = None):
+    async def layout_switched(self, current_layout = None):
         pass
+
+    async def request_draw(self):
+        '''
+        Asks the display manager to ask the currently active layout to request a draw
+        '''
+        await self.display_manager.request_plugin_immediate_draw(self)

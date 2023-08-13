@@ -1,4 +1,5 @@
 from common.layout import Layout
+from common.plugin import PluginBase
 
 class DisplayManager():
 
@@ -16,27 +17,34 @@ class DisplayManager():
     def current_layout(cls):
         return cls._current_layout
 
-    def update_display(self, *, redraw = False):
+    async def update_display(self, *, canvas = None):
+        '''
+        Updates the display. If the canvas parameter is left blank,
+        a draw() call will be made on current layout.
+        '''
+
         if self._current_layout is None:
             raise Exception("No layout is currently selected")
 
-        canvas = self._current_layout.draw(redraw = redraw)
-        canvas.show()
+        if not canvas:
+            canvas = await self._current_layout.draw()
 
-        self.current_layout.screen_updated()
+        await self.current_layout.screen_updated()
+        #canvas.show()
+
         # TODO: Push this image onto an LED screen
 
-    def switch_layout(self, layout):
+    async def switch_layout(self, layout):
         if not layout in self._layouts:
             raise Exception("Layout must be properly registered in order to switch to it")
         
         if self._current_layout is not None:
-            self._current_layout.deactivated()
+            await self._current_layout.deactivated()
         
         self._current_layout = layout # This will be the same layout instance as in self._layouts because of the guards above
-        layout.handle_plugin_changeover()
-        layout.activated()
-        self.update_display(redraw = True)
+        await layout.handle_plugin_changeover()
+        await layout.activated()
+        await self.update_display()
         
 
     def new_layout(self, layout_cls = None):
@@ -52,3 +60,15 @@ class DisplayManager():
         self._layouts.append(l)
         return l
 
+    # Doing things this way is a bit janky and it may just be better to just call update_display()
+    async def request_plugin_immediate_draw(self, plugin: PluginBase):
+        '''
+        A function for plugins to directly ask for their draw() function to be called.
+
+        Intended for immediate-mode style applications
+        '''
+        canvas = await self._current_layout.plugin_draw_requested(plugin)
+        if canvas:
+            await self.update_display(canvas = canvas)
+            return True
+        return False
