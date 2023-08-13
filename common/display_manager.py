@@ -22,6 +22,8 @@ class DisplayManager():
 
         canvas = self._current_layout.draw(redraw = redraw)
         canvas.show()
+
+        self.current_layout.screen_updated()
         # TODO: Push this image onto an LED screen
 
     def switch_layout(self, layout):
@@ -32,7 +34,8 @@ class DisplayManager():
             self._current_layout.deactivated()
         
         self._current_layout = layout # This will be the same layout instance as in self._layouts because of the guards above
-        self._current_layout.activated()
+        layout.handle_plugin_changeover()
+        layout.activated()
         self.update_display(redraw = True)
         
 

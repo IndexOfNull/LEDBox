@@ -41,12 +41,9 @@ class Layout():
 
         if isinstance(plugin, str):
             plugin_module = import_module(plugin)
-            plugin_canvas = Image.new("RGB", (width, height))
-            plugin_instance = plugin_module.setup(plugin_canvas)
+            plugin_instance = plugin_module.setup((width, height), self._display_manager)
         elif isinstance(plugin, PluginBase):
             plugin_instance = plugin
-            if plugin_instance.canvas.width != width or plugin_instance.canvas.height != height:
-                raise Exception("Plugin's canvas does not match passed width and height")
 
         if plugin_instance in self._plugins:
             raise PluginAlreadyRegistered("Plugin has already been added to this layout")
@@ -91,9 +88,59 @@ class Layout():
 
         return self._canvas
 
+    def screen_updated(self):
+        '''
+        Called right after the screen updates.
+        Only called if the current layout is active.
+        Subclasses should take care to call screen_updated on registered plugins.
+        Subclasses can use super().screen_updated to achieve this
+
+        Subclasses should also take care to not trigger another screen update with this function (infinite loop).
+        '''
+        print("Layout: screen updated")
+        for plugin in self._plugins:
+            plugin.screen_updated()
 
     def refresh_plugin_frame(self, plugin):
         self._canvas.paste(plugin.canvas, self._plugin_coordinates[plugin])
+
+    def change_plugin_coords(self, plugin: PluginBase, *, x:int = None, y:int = None, width:int = None, height:int = None):
+        old_coords = self._plugin_coordinates[plugin]
+        old_width = abs(old_coords[2] - old_coords[0])
+        old_height = abs(old_coords[3] - old_coords[1])
+        new_coords = list(old_coords)
+
+        # Take care of shifting along x and y before worrying about updating x2 and y2 for width and height
+        if x is not None:
+            new_coords[0] = x
+            new_coords[2] = x + old_width
+        if y is not None:
+            new_coords[1] = y
+            new_coords[3] = y + old_height
+        if width is not None:
+            new_coords[2] = new_coords[0] + width
+        if height is not None:
+            new_coords[3] = new_coords[1] + height
+
+        new_width = (width if width is not None else old_width)
+        new_height = (height if height is not None else old_height)
+
+        self._plugin_coordinates[plugin] = tuple(new_coords)
+        plugin.resize_requested(new_width, new_height)
+
+    def handle_plugin_changeover(self):
+        '''
+        Called when this layout becomes active (before activated is called)
+        Notifies plugins that this layout is visible and asks them to resize accordingly.
+
+        This function is separated for the convenience of subclasses.
+        '''
+        for plugin, dimensions in self._plugin_coordinates.items():
+            plugin.layout_switched(self)
+
+            width = abs(dimensions[2] - dimensions[0])
+            height = abs(dimensions[3] - dimensions[1])
+            plugin.resize_requested(width, height)
 
     def activated(self):
         '''
