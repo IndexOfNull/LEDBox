@@ -1,5 +1,6 @@
 import common.display_manager as dm
 import time
+import asyncio
 
 # For some reason importlib throws a fit when I don't do this ¯\_(ツ)_/¯
 from modules import test, httptest
