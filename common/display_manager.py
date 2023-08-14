@@ -1,8 +1,6 @@
 from common.layout import Layout
 from common.plugin import PluginBase
 
-import aiohttp
-
 class DisplayManager():
 
     def __init__(self, matrix = None, *, width = 64, height = 64):
@@ -11,11 +9,6 @@ class DisplayManager():
         self._screen_width = width
         self._screen_height = height
         self._current_layout = None
-        self._http_session = aiohttp.ClientSession()
-
-    @property
-    def http_session(cls):
-        return cls._http_session
 
     @property
     def layouts(cls):

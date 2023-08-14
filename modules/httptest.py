@@ -29,7 +29,7 @@ class TestPlugin(PluginBase):
         while True:
             print("Requesting draw from httptest plugin")
             await asyncio.sleep(5)
-            async with self.display_manager.http_session as sess:
+            async with aiohttp.ClientSession() as sess:
                 async with sess.get("https://images.pexels.com/photos/1525041/pexels-photo-1525041.jpeg?cs=srgb&dl=pexels-francesco-ungaro-1525041.jpg&fm=jpg") as resp:
                 #async with sess.get("https://i.imgur.com/gh586hQ.png") as resp:
                     b = BytesIO(await resp.read())
