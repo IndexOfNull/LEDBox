@@ -14,14 +14,14 @@ try:
     options.chain_length = 1
     options.parallel = 1
     options.hardware_mapping = 'adafruit-hat-pwm'
+    options.brightness = 50
 
     matrix = RGBMatrix(options = options)
 except ImportError:
     pass
 
-display_manager = dm.DisplayManager(matrix, width=64, height=64)
-
 async def main():
+    display_manager = dm.DisplayManager(matrix, width=64, height=64)
     l = display_manager.new_layout()
     p = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
     p = l.add_plugin("modules.httptest", width = 30, height = 38, x = 64-30, y = 64-38)
