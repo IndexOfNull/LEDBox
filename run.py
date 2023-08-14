@@ -2,7 +2,7 @@ import common.display_manager as dm
 import time
 
 # For some reason importlib throws a fit when I don't do this ¯\_(ツ)_/¯
-from modules import http, httptest
+from modules import test, httptest
 
 matrix = None
 try:
