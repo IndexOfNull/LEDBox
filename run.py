@@ -4,16 +4,24 @@ import asyncio
 from random import randint
 import time
 
-display_manager = dm.DisplayManager(width=64, height=64)
+matrix = None
+try:
+    from rgbmatrix import RGBMatrix, RGBMatrixOptions
+    options = RGBMatrixOptions()
+    options.rows = 32
+    options.cols = 64
+    options.chain_length = 1
+    options.parallel = 1
+    options.hardware_mapping = 'adafruit-hat-pwm'
+
+    matrix = RGBMatrix(options = options)
+except ImportError:
+    pass
+
+display_manager = dm.DisplayManager(matrix, width=64, height=64)
 
 async def main():
     l = display_manager.new_layout()
-    p = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
-    p = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
-    p = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
-    p = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
-    p = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
-    p = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
     p = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
     p = l.add_plugin("modules.httptest", width = 30, height = 38, x = 64-30, y = 64-38)
 

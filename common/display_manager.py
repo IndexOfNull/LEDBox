@@ -3,7 +3,8 @@ from common.plugin import PluginBase
 
 class DisplayManager():
 
-    def __init__(self, *, width = 64, height = 64):
+    def __init__(self, matrix = None, *, width = 64, height = 64):
+        self.matrix = matrix
         self._layouts: dict[Layout] = []
         self._screen_width = width
         self._screen_height = height
@@ -30,9 +31,9 @@ class DisplayManager():
             canvas = await self._current_layout.draw()
 
         await self.current_layout.screen_updated()
-        #canvas.show()
 
-        # TODO: Push this image onto an LED screen
+        if self.matrix:
+            self.matrix.SetImage(canvas)
 
     async def switch_layout(self, layout):
         if not layout in self._layouts:
