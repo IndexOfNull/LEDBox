@@ -13,6 +13,7 @@ class Layout():
         self._canvas = Image.new("RGB", (screen_width, screen_height))
         self._visible = False
         self._display_manager = display_manager
+        self.debug_borders = False
 
     def frame_requested(self) -> Image:
         '''
@@ -88,9 +89,17 @@ class Layout():
                 continue # Skip compositiing a plugin if it's draw function has errored
 
             try:
-                self._canvas.paste(canvas, self._plugin_coordinates[plugin])
-            except:
-                print(f"{plugin} failed to paste onto layout. This is probably because the plugin illegally changed the size of its frame.")
+                coords = self._plugin_coordinates[plugin]
+                if self.debug_borders:
+                    border_w = 1 # pixel
+                    border_im = Image.new("RGB", (canvas.width + border_w * 2, canvas.height + border_w * 2), (255, 0, 0))
+                    border_im.paste(canvas, (border_w, border_w))
+                    canvas = border_im
+                    coords = (coords[0]-border_w, coords[1]-border_w, coords[2]+border_w, coords[3]+border_w)
+
+                self._canvas.paste(canvas, coords)
+            except Exception as e:
+                print(f"{plugin} failed to paste onto layout. This is probably because the plugin illegally changed the size of its frame: {e}")
 
         return self._canvas
 
@@ -103,6 +112,7 @@ class Layout():
 
         Subclasses should also take care to not trigger another screen update with this function (infinite loop).
         '''
+        # TODO: Rewrite to call all coroutines at once
         for plugin in self._plugins:
             await plugin.screen_updated()
 
