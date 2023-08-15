@@ -3,6 +3,7 @@ from PIL import Image
 import asyncio
 import aiohttp
 from io import BytesIO
+from random import choice
 
 class TestPlugin(PluginBase):
 
@@ -30,10 +31,10 @@ class TestPlugin(PluginBase):
             print("Requesting draw from httptest plugin")
             await asyncio.sleep(5)
             async with aiohttp.ClientSession() as sess:
-                async with sess.get("https://images.pexels.com/photos/1525041/pexels-photo-1525041.jpeg?cs=srgb&dl=pexels-francesco-ungaro-1525041.jpg&fm=jpg") as resp:
-                #async with sess.get("https://i.imgur.com/gh586hQ.png") as resp:
-                    b = BytesIO(await resp.read())
-                    self.downloaded_image = Image.open(b).resize(self.dimensions)
+                async with sess.get(choice(("https://i.imgur.com/gh586hQ.png", "https://i.imgur.com/vgxKgEJ.png"))) as resp:
+                    # Subsequent HTTP requests go pretty fast (~100ms), probably because keep-alive
+                    b = BytesIO(await resp.read()) # Consider reading in smaller blocks for larger files to avoid blocking for long periods
+                    self.downloaded_image = Image.open(b).resize(self.dimensions) # Ideally your downloaded image will already be the correct dimensions
             await self.display_manager.request_plugin_immediate_draw(self)
         
 

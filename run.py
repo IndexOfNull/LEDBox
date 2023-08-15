@@ -13,7 +13,9 @@ try:
     options.cols = 64
     options.chain_length = 1
     options.parallel = 1
+    options.brightness = 50
     options.hardware_mapping = 'adafruit-hat-pwm'
+    options.pixel_mapper_config = 'U-mapper;Rotate:180'
 
     matrix = RGBMatrix(options = options)
 except ImportError:
