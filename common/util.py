@@ -1,3 +1,4 @@
+
 def box_overlap(box1: tuple(int, int, int, int), box2: tuple(int, int, int, int)):
     '''
     Checks if the two bounding boxes overlap. Coords are given as (x1, y1, x2, y2) tuples.

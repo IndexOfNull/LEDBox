@@ -14,8 +14,9 @@ class PluginBase():
  
     def __init__(self, dimensions: tuple[int, int], display_manager):
         # self._canvas: Image = canvas # Shared between Layout and Plugin (passed by reference)
-        self._current_width = dimensions[0] # Do not directly mutate
-        self._current_height = dimensions[1]
+        self._canvas_size = dimensions # Do not directly mutate
+        self._width = dimensions[0] # Do not directly mutate
+        self._height = dimensions[1]
         self.display_manager = display_manager # Reference to the parent window manager
 
     async def draw(self) -> Image:
@@ -55,8 +56,8 @@ class PluginBase():
         Subclasses may also use super().resize_requested for convenience
         '''
         #self._canvas = self._canvas.resize((width, height))
-        self._current_width = width
-        self._current_height = height
+        self._width = width
+        self._height = height
 
     async def layout_switched(self, current_layout = None):
         pass

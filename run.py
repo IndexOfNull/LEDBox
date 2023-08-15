@@ -25,11 +25,13 @@ display_manager = dm.DisplayManager(matrix, width=64, height=64)
 
 async def main():
     l = display_manager.new_layout()
-    p = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
-    p = l.add_plugin("modules.httptest", width = 30, height = 38, x = 64-30, y = 64-38)
+    l.add_plugin("modules.clock", width = 40, height = 7, x = 64//2-20, y = 64//2-8)
+    l.debug_borders = True
+    #p = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
+    #p = l.add_plugin("modules.httptest", width = 30, height = 38, x = 64-30, y = 64-38)
 
-    l2 = display_manager.new_layout()
-    l2.add_plugin(p, width = 16, height = 16, x = 32, y = 32)
+    #l2 = display_manager.new_layout()
+    #l2.add_plugin(p, width = 16, height = 16, x = 32, y = 32)
 
     await display_manager.switch_layout(l)
 
@@ -41,7 +43,8 @@ async def main():
         end_time = time.perf_counter()
         total_time = end_time - start_time
         print(f"Frame time: {total_time*1000} ms, {1/total_time} fps, {interframe_time} dT")
-        await asyncio.sleep(1)
+        display_manager.current_layout._canvas.show()
+        break
         # print("Changing plugin coords")
         # await l.change_plugin_coords(p, x = randint(0, 32), y = randint(0, 32))
 

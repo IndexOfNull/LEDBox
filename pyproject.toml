@@ -11,6 +11,9 @@ Pillow = "^10.0.0"
 aiohttp = "^3.8.5"
 
 
+[tool.poetry.group.dev.dependencies]
+pillow-scripts = "^5.0.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
