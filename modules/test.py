@@ -26,6 +26,15 @@ class TestPlugin(PluginBase):
     async def resize_requested(self, width, height):
         self._canvas = self._canvas.resize((width, height))
 
+    async def layout_switched(self, previous_layout, current_layout):
+        print(f"{self}: layout switched from {previous_layout} to {current_layout}")
+
+    async def deactivated(self):
+        print(f"{self}: Hidden")
+
+    async def activated(self):
+        print(f"{self}: Unhidden")
+
     # async def draw_loop(self):
     #     while True:
     #         print("Requesting draw")

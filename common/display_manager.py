@@ -1,6 +1,8 @@
 from common.layout import Layout
 from common.plugin import PluginBase
 
+import asyncio
+
 class DisplayManager():
 
     def __init__(self, matrix = None, *, width = 64, height = 64):
@@ -39,12 +41,31 @@ class DisplayManager():
         if not layout in self._layouts:
             raise Exception("Layout must be properly registered in order to switch to it")
         
+        # Callbacks on layout member plugins
+        shared_plugins = []
+        deactivating_plugins = []
         if self._current_layout is not None:
-            await self._current_layout.deactivated()
-        
+            shared_plugins = [plugin for plugin in self.current_layout.plugins if plugin in layout.plugins] # Plugins shared by both layouts
+            
+            deactivating_plugins = [plugin for plugin in self.current_layout.plugins if plugin not in shared_plugins]
+            deactivation_tasks = [plugin.deactivated() for plugin in deactivating_plugins]
+            await asyncio.gather(*deactivation_tasks, return_exceptions = True)
+
+        activating_plugins = [plugin for plugin in layout.plugins if plugin not in shared_plugins]
+        activation_tasks = [plugin.activated() for plugin in activating_plugins]
+        await asyncio.gather(*activation_tasks, return_exceptions = True)
+
+        layout_switch_tasks = [plugin.layout_switched(self.current_layout, layout) for plugin in shared_plugins + activating_plugins + deactivating_plugins]
+        await asyncio.gather(*layout_switch_tasks, return_exceptions = True)
+
+        # Call layout callbacks after we handle plugins
+        if self._current_layout is not None:
+            await self._current_layout.deactivated(layout)
+
+        previous_layout = self.current_layout
         self._current_layout = layout # This will be the same layout instance as in self._layouts because of the guards above
         await layout.handle_plugin_changeover()
-        await layout.activated()
+        await layout.activated(previous_layout)
         await self.update_display()
         
 

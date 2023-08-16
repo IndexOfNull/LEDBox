@@ -15,6 +15,10 @@ class Layout():
         self._display_manager = display_manager
         self.debug_borders = False
 
+    @property
+    def plugins(cls):
+        return cls._plugins
+
     def frame_requested(self) -> Image:
         '''
         Called when the parent DisplayManager asks for a frame
@@ -113,8 +117,8 @@ class Layout():
         Subclasses should also take care to not trigger another screen update with this function (infinite loop).
         '''
         # TODO: Rewrite to call all coroutines at once
-        for plugin in self._plugins:
-            await plugin.screen_updated()
+        tasks = [plugin.screen_updated() for plugin in self._plugins]
+        await asyncio.gather(*tasks, return_exceptions = True)
 
     async def change_plugin_coords(self, plugin: PluginBase, *, x:int = None, y:int = None, width:int = None, height:int = None):
         old_coords = self._plugin_coordinates[plugin]
@@ -148,12 +152,12 @@ class Layout():
 
         This function is separated for the convenience of subclasses.
         '''
+        tasks = []
         for plugin, dimensions in self._plugin_coordinates.items():
-            await plugin.layout_switched(self)
-
             width = abs(dimensions[2] - dimensions[0])
             height = abs(dimensions[3] - dimensions[1])
-            await plugin.resize_requested(width, height)
+            tasks.append(plugin.resize_requested(width, height))
+        await asyncio.gather(*tasks, return_exceptions = True)
 
     # This is kind of janky and arguably it would be better to 
     async def plugin_draw_requested(self, plugin: PluginBase) -> Image:
@@ -169,15 +173,14 @@ class Layout():
         self._canvas.paste(canvas, self._plugin_coordinates[plugin])
         return self._canvas
 
-
-    async def activated(self):
+    async def activated(self, previous_layout):
         '''
         Called when the layout is being unhidden. This is called before a fresh draw when switching layouts.
         '''
         self._visible = True
 
-    async def deactivated(self):
+    async def deactivated(self, next_layout):
         '''
         Called when the layout is being hidden, usually when switching to a different layout
         '''
-        pass
+        self._visible = False

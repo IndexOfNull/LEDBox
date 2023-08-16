@@ -56,10 +56,31 @@ class PluginBase():
         Subclasses may also use super().resize_requested for convenience
         '''
         #self._canvas = self._canvas.resize((width, height))
+        self._canvas_size = (width, height)
         self._width = width
         self._height = height
 
-    async def layout_switched(self, current_layout = None):
+    async def deactivated(self):
+        '''
+        Called when this plugin is no longer visible.
+        
+        This can be triggered as the result of a layout switch only when moving from
+        a layout where this plugin instance is visible to one where it is not.
+        '''
+
+    async def activated(self):
+        '''
+        Called when this plugin becomes visible.
+        
+        This can be triggered as the result of a layout switch
+        only when the current layout contains this plugin instance where the previous layout did not .
+        '''
+
+    async def layout_switched(self, previous_layout, current_layout):
+        '''
+        Called when the layout has switched to a different layout also containing this plugin instance.
+        This function is not called if the destination layout does not contain this plugin instance.
+        '''
         pass
 
     async def request_draw(self):
