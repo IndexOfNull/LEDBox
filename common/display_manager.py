@@ -25,17 +25,15 @@ class DisplayManager():
         Updates the display. If the canvas parameter is left blank,
         a draw() call will be made on current layout.
         '''
-
         if self._current_layout is None:
             raise Exception("No layout is currently selected")
 
         if not canvas:
             canvas = await self._current_layout.draw()
-
-        await self.current_layout.screen_updated()
-
         if self.matrix:
             self.matrix.SetImage(canvas)
+
+        await self.current_layout.screen_updated()
 
     async def switch_layout(self, layout):
         if not layout in self._layouts:
@@ -82,12 +80,23 @@ class DisplayManager():
         self._layouts.append(l)
         return l
 
-    # Doing things this way is a bit janky and it may just be better to just call update_display()
-    async def request_plugin_immediate_draw(self, plugin: PluginBase):
+    async def request_immediate_draw(self):
         '''
         A function for plugins to directly ask for their draw() function to be called.
 
         Intended for immediate-mode style applications
+        '''
+        canvas = await self._current_layout.draw()
+        if canvas:
+            await self.update_display(canvas = canvas)
+            return True
+        return False
+
+    async def request_plugin_immediate_draw(self, plugin: PluginBase):
+        '''
+        A function for plugins to directly ask for their draw() function to be called.
+        Ignores z-index and draws plugin on top. In most cases you will want to use
+        request_immediate_draw()
         '''
         canvas = await self._current_layout.plugin_draw_requested(plugin)
         if canvas:

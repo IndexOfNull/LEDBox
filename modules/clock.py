@@ -14,7 +14,7 @@ class ClockPlugin(PluginBase):
 
     async def draw(self):
         dt = datetime.now()
-        text = f"{dt.hour}:{dt.minute}" + (f":{dt.second}" if self.show_seconds else "")
+        text = f"{dt.hour:02d}:{dt.minute:02d}" + (f":{dt.second:02d}" if self.show_seconds else "")
         font = ImageFont.load("assets/unscii-8-alt.pil")
         text_dimensions = font.getbbox(text)[2:] # First two items of bounding box are just zeroes
 
@@ -57,7 +57,7 @@ class ClockPlugin(PluginBase):
         while True:
             await asyncio.sleep(1)
             self._show_colon = not self._show_colon
-            await self.display_manager.request_plugin_immediate_draw(self)
+            await self.display_manager.request_immediate_draw()
 
 def setup(dim, display_manager):
     return ClockPlugin(dim, display_manager)

@@ -4,12 +4,14 @@ from PIL import Image
 
 from importlib import import_module
 import asyncio
+import random
 
 class Layout():
 
     def __init__(self, display_manager, *, screen_width = 64, screen_height = 64):
         self._plugins: list[PluginBase] = []
         self._plugin_coordinates: dict[PluginBase, tuple(int, int, int, int)] = {}
+        self._plugin_z_index: dict[PluginBase, int] = {}
         self._canvas = Image.new("RGB", (screen_width, screen_height))
         self._visible = False
         self._display_manager = display_manager
@@ -27,7 +29,7 @@ class Layout():
         return self._canvas
 
     # TODO: Maybe make plugin parameter a string and resolve to an import automatically?
-    def add_plugin(self, plugin: str | PluginBase, *, width: int, height:int, x:int = 0, y:int = 0) -> PluginBase:
+    def add_plugin(self, plugin: str | PluginBase, *, width: int, height:int, x:int = 0, y:int = 0, z_index:int = 0) -> PluginBase:
         '''
         Registers a plugin.
 
@@ -51,13 +53,14 @@ class Layout():
 
         self._plugins.append(plugin_instance)
         self._plugin_coordinates[plugin_instance] = (x, y, x + width, y + height)
+        self._plugin_z_index[plugin_instance] = z_index
         return plugin_instance
 
-    def remove_plugin(self, plugin: PluginBase, *, redraw = True):
+    async def remove_plugin(self, plugin: PluginBase, *, redraw = True):
         if not plugin in self._plugins:
             raise PluginNotRegistered("Plugin is not registered in this layout")
 
-        plugin.on_teardown()
+        await plugin.teardown()
         self._plugins.remove(plugin)
         del self._plugin_coordinates[plugin]
 
@@ -72,18 +75,29 @@ class Layout():
             return None
         return plugin
 
+    def _get_z_ordered_plugin_list(self, *, pairs:bool = False, reverse:bool = False):
+        '''
+        Returns member plugins ordered by their z-index. Pairs will return (z-index, plugin) tuples.
+        '''
+        sorted_plugins = [(z_ind, plugin) for plugin, z_ind in self._plugin_z_index.items()]
+        sorted_plugins.sort(key = lambda x: x[0], reverse = reverse)
+        if pairs:
+            return sorted_plugins
+        else:
+            return [plugin for _, plugin in sorted_plugins]
+
     async def draw(self) -> Image:
         '''
         Draws a frame using all of the plugin canvases.
-        
-        redraw will ask plugins to update their frames
 
         Returns the Layout's canvas
         '''
         self._canvas.paste( (0, 0, 0), (0, 0, self._canvas.width, self._canvas.height)) # Fill entire screen with black
 
         tasks = {} # Make a copy dict in case plugins gets mutated asyncronously, i guess
-        for plugin in self._plugins:
+        sorted_plugins = self._get_z_ordered_plugin_list() # Get plugins in order by their z-index. Code below asumes this is the draw order
+
+        for plugin in sorted_plugins:
             tasks[plugin] = asyncio.wait_for(plugin.draw(), timeout=0.1) # 100 ms to draw
 
         canvases = await asyncio.gather(*tasks.values(), return_exceptions = True)
@@ -96,7 +110,7 @@ class Layout():
                 coords = self._plugin_coordinates[plugin]
                 if self.debug_borders:
                     border_w = 1 # pixel
-                    border_im = Image.new("RGB", (canvas.width + border_w * 2, canvas.height + border_w * 2), (255, 0, 0))
+                    border_im = Image.new("RGB", (canvas.width + border_w * 2, canvas.height + border_w * 2), tuple(random.sample(range(0, 255), 3)))
                     border_im.paste(canvas, (border_w, border_w))
                     canvas = border_im
                     coords = (coords[0]-border_w, coords[1]-border_w, coords[2]+border_w, coords[3]+border_w)
@@ -120,7 +134,7 @@ class Layout():
         tasks = [plugin.screen_updated() for plugin in self._plugins]
         await asyncio.gather(*tasks, return_exceptions = True)
 
-    async def change_plugin_coords(self, plugin: PluginBase, *, x:int = None, y:int = None, width:int = None, height:int = None):
+    async def change_plugin_coords(self, plugin: PluginBase, *, x:int = None, y:int = None, width:int = None, height:int = None, z_index:int = None, redraw = False):
         old_coords = self._plugin_coordinates[plugin]
         old_width = abs(old_coords[2] - old_coords[0])
         old_height = abs(old_coords[3] - old_coords[1])
@@ -141,9 +155,13 @@ class Layout():
         new_width = (width if width is not None else old_width)
         new_height = (height if height is not None else old_height)
 
+        if z_index is not None:
+            self._plugin_z_index[plugin] = z_index
+
         self._plugin_coordinates[plugin] = tuple(new_coords)
         await plugin.resize_requested(new_width, new_height)
-        await self.draw()
+        if redraw:
+            await self._display_manager.request_immediate_draw()
 
     async def handle_plugin_changeover(self):
         '''
@@ -162,12 +180,12 @@ class Layout():
     # This is kind of janky and arguably it would be better to 
     async def plugin_draw_requested(self, plugin: PluginBase) -> Image:
         '''
-        Called by the display manager when a plugin requests a screen draw
+        Called by the display manager when a plugin requests a screen draw. Partial redraw will redraw only the passed plugin (can cause z-index issues)
         '''
         plugin = self.get_plugin(plugin)
         if not plugin:
             return
-        
+
         canvas = await plugin.draw()
         self._canvas.paste( (0, 0, 0), self._plugin_coordinates[plugin])
         self._canvas.paste(canvas, self._plugin_coordinates[plugin])
