@@ -26,7 +26,7 @@ class ClockPlugin(PluginBase):
             canvas_width = max([box[0] for box in bboxes])
             canvas_height = sum([box[1] for box in bboxes]) + v_spacing * (len(time_components) - 1)
 
-            font_canvas = Image.new("RGB", (canvas_width, canvas_height))
+            font_canvas = Image.new("RGBA", (canvas_width, canvas_height))
             draw = ImageDraw.Draw(font_canvas)
 
             cur_y = 0
@@ -34,14 +34,14 @@ class ClockPlugin(PluginBase):
                 draw.text((0, cur_y), text=text, fill=(15*(ind), 60*(ind+1), 60*(ind+2)), font=font)
                 cur_y += bbox[1] + v_spacing
         else:
-            font_canvas = Image.new("RGB", (text_dimensions[0], text_dimensions[1]))
+            font_canvas = Image.new("RGBA", (text_dimensions[0], text_dimensions[1]))
             draw = ImageDraw.Draw(font_canvas)
             if not self._show_colon:
                 text = text.replace(':', ' ')
             draw.text((0, 0), text=text, fill=(255, 255, 255), font=font)
 
-        final_canvas = Image.new("RGB", self._canvas_size)
-        final_canvas.paste(font_canvas, (0, 0))
+        final_canvas = Image.new("RGBA", self._canvas_size)
+        final_canvas.paste(font_canvas, (0, 0), font_canvas)
         return final_canvas
     
     async def activated(self):

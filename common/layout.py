@@ -102,6 +102,8 @@ class Layout():
 
         canvases = await asyncio.gather(*tasks.values(), return_exceptions = True)
         for canvas, plugin in zip(canvases, tasks.keys()):
+            if not canvas:
+                continue
             if isinstance(canvas, Exception):
                 print(f"Warning: {plugin} draw() call returned an exception and could not be composited:", canvas)
                 continue # Skip compositiing a plugin if it's draw function has errored
@@ -114,8 +116,7 @@ class Layout():
                     border_im.paste(canvas, (border_w, border_w))
                     canvas = border_im
                     coords = (coords[0]-border_w, coords[1]-border_w, coords[2]+border_w, coords[3]+border_w)
-
-                self._canvas.paste(canvas, coords)
+                self._canvas.paste(canvas, coords, (canvas if canvas.mode == "RGBA" else None))
             except Exception as e:
                 print(f"{plugin} failed to paste onto layout. This is probably because the plugin illegally changed the size of its frame: {e}")
 
