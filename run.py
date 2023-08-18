@@ -1,5 +1,6 @@
 import common.display_manager as dm
 import time
+import math
 import asyncio
 
 # For some reason importlib throws a fit when I don't do this ¯\_(ツ)_/¯
@@ -25,21 +26,25 @@ display_manager = dm.DisplayManager(matrix, width=64, height=64)
 
 async def main():
     l = display_manager.new_layout()
-    clock_plugin = l.add_plugin("modules.clock", width = 40, height = 7, x = 64//2-20, y = 64//2-8)
-    l.debug_borders = True
+    clock_plugin = l.add_plugin("modules.clock", width = 40, height = 10, x = 64//2-20, y = 64//2-8, z_index=1)
+    #l.debug_borders = True
     #p = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
     #p2 = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
     #p = l.add_plugin("modules.httptest", width = 30, height = 38, x = 64-30, y = 64-38)
+    p = l.add_plugin("modules.httptest", width = 64, height = 64, x = 0, y = 0)
 
     l2 = display_manager.new_layout()
     l2.add_plugin(clock_plugin, width = 20, height = 40, x = 0, y = 0)
 
-    end_time = 0
+    await display_manager.switch_layout(l)
+    
+    counter = 0
     while True:
-        await display_manager.switch_layout(l)
-        await asyncio.sleep(5)
-        await display_manager.switch_layout(l2)
-        await asyncio.sleep(5)
+        #await l.change_plugin_coords(clock_plugin, x = int((math.cos(counter) + 1)*32))
+        #await display_manager.request_immediate_draw()
+        await asyncio.sleep(1/10)
+        #await l.change_plugin_coords(clock_plugin, z_index=1)
+        counter += 0.1
         # start_time = time.perf_counter()
         # await display_manager.update_display()
         # interframe_time = time.perf_counter() - end_time

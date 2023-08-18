@@ -28,14 +28,13 @@ class TestPlugin(PluginBase):
 
     async def draw_loop(self):
         while True:
-            print("Requesting draw from httptest plugin")
             await asyncio.sleep(5)
             async with aiohttp.ClientSession() as sess:
-                async with sess.get(choice(("https://i.imgur.com/gh586hQ.png", "https://i.imgur.com/vgxKgEJ.png"))) as resp:
+                async with sess.get("https://i.imgur.com/qYl45gy.png") as resp:
                     # Subsequent HTTP requests go pretty fast (~100ms), probably because keep-alive
                     b = BytesIO(await resp.read()) # Consider reading in smaller blocks for larger files to avoid blocking for long periods
                     self.downloaded_image = Image.open(b).resize(self.dimensions) # Ideally your downloaded image will already be the correct dimensions
-            await self.display_manager.request_plugin_immediate_draw(self)
+            await self.display_manager.request_immediate_draw()
         
 
 def setup(dimensions, display_manager):

@@ -38,7 +38,7 @@ class ClockPlugin(PluginBase):
             draw = ImageDraw.Draw(font_canvas)
             if not self._show_colon:
                 text = text.replace(':', ' ')
-            draw.text((0, 0), text=text, fill=(255, 255, 255), font=font)
+            draw.text((0, 0), text=text, fill=(0, 0, 0), font=font)
 
         final_canvas = Image.new("RGBA", self._canvas_size)
         final_canvas.paste(font_canvas, (0, 0), font_canvas)
