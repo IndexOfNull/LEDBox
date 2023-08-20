@@ -1,0 +1,13 @@
+[Unit]
+Description=LED Box Software
+After=multi-user.target
+
+[Service]
+WorkingDirectory=/opt/LEDBox
+ExecStart=/usr/bin/python /opt/LEDBox/run.py
+Restart=always
+RestartSec=5
+
+
+[Install]
+WantedBy=multi-user.target
