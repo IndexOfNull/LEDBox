@@ -4,7 +4,7 @@ import math
 import asyncio
 
 # For some reason importlib throws a fit when I don't do this ¯\_(ツ)_/¯
-from modules import test, httptest, clock
+from modules import test, httptest, clock, image
 
 matrix = None
 try:
@@ -26,15 +26,12 @@ display_manager = dm.DisplayManager(matrix, width=64, height=64)
 
 async def main():
     l = display_manager.new_layout()
-    clock_plugin = l.add_plugin("modules.clock", width = 40, height = 10, x = 64//2-20, y = 64//2-8, z_index=1)
+    #clock_plugin = l.add_plugin("modules.clock", width = 40, height = 10, x = 64//2-20, y = 64//2-8, z_index=1)
     #l.debug_borders = True
-    #p = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
-    #p2 = l.add_plugin("modules.test", width = 32, height = 32, x = 10, y = 10)
-    #p = l.add_plugin("modules.httptest", width = 30, height = 38, x = 64-30, y = 64-38)
-    p = l.add_plugin("modules.httptest", width = 64, height = 64, x = 0, y = 0)
-
-    l2 = display_manager.new_layout()
-    l2.add_plugin(clock_plugin, width = 20, height = 40, x = 0, y = 0)
+    p = l.add_plugin("modules.image", width = 64, height = 64, x = 0, y = 0)
+    p.add_image("assets/images/testalbumcover.png", encoding = "utf-8")
+    p.add_image("assets/images/testalbumcover2.png", encoding = "utf-8")
+    p.hold_time = 3
 
     await display_manager.switch_layout(l)
     
