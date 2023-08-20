@@ -4,7 +4,8 @@ import math
 import asyncio
 
 # For some reason importlib throws a fit when I don't do this ¯\_(ツ)_/¯
-from modules import test, httptest, clock, image
+from modules import test, httptest, clock, image, debug
+from common.util import get_ip
 
 matrix = None
 try:
@@ -25,6 +26,17 @@ except ImportError:
 display_manager = dm.DisplayManager(matrix, width=64, height=64)
 
 async def main():
+    try:
+        ip_addr = get_ip()
+        startup_layout = display_manager.new_layout()
+        ip_text = startup_layout.add_plugin('modules.debug.text', width=64, height=64, x=0, y=0, text=ip_addr.replace('.', '.\n'))
+
+        await display_manager.switch_layout(startup_layout)
+        await asyncio.sleep(10)
+        # TODO: Implement layout removal and do it here?
+    except:
+        pass
+
     l = display_manager.new_layout()
     #clock_plugin = l.add_plugin("modules.clock", width = 40, height = 10, x = 64//2-20, y = 64//2-8, z_index=1)
     #l.debug_borders = True

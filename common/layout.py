@@ -29,7 +29,7 @@ class Layout():
         return self._canvas
 
     # TODO: Maybe make plugin parameter a string and resolve to an import automatically?
-    def add_plugin(self, plugin: str | PluginBase, *, width: int, height:int, x:int = 0, y:int = 0, z_index:int = 0) -> PluginBase:
+    def add_plugin(self, plugin: str | PluginBase, *, width: int, height:int, x:int = 0, y:int = 0, z_index:int = 0, **kwargs) -> PluginBase:
         '''
         Registers a plugin.
 
@@ -42,7 +42,7 @@ class Layout():
 
         if isinstance(plugin, str):
             plugin_module = import_module(plugin)
-            plugin_instance = plugin_module.setup((width, height), self._display_manager)
+            plugin_instance = plugin_module.setup((width, height), self._display_manager, **kwargs)
         elif isinstance(plugin, PluginBase):
             plugin_instance = plugin
 
